@@ -38,6 +38,11 @@ This gives us the overall exploit idea:
 
 2. Choose the raw input so the compressed bytes that land in [rbp+8] become the low bytes of the win address.
 
+To return to `win (0x00000000004011a5)` we only need to control the low bytes of the saved RIP in memory. In little-endian that target is `a5 11 40 00 00 00 00 00`, so we must cause the compressed output to contain `a5 11` at the saved-RIP location. So if we send the raw byte 0xa5 repeated 0x11 (17) times the compressor will produce a5 11.
+
+To align that (a5,11) pair with `[rbp+8]` we pad it with an offset. The compressed buffer occupies 784 bytes (rbp-0x310) and the saved RIP sits 8 bytes beyond it, so 792 compressed bytes land exactly at `[rbp+8]`. Using `gdb`, we find that sending `'ab'` 198 times gets us to `[rbp+8]`.
+
+Running the exploit with this caused a crash due to stack alignment issues. To fix this, we can us `win + 1` which is `0x4011a6` and avoid misalignment issues on the return. 
 
 ## Solution
 ```Python
